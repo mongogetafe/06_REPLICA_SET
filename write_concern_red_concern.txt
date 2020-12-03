@@ -1,0 +1,32 @@
+Write Concern
+
+Reconocimiento de las operaciones de escritura en los miembros del cluster
+
+En operaciones de escritura disponemos de un objeto de operaciones
+
+writeConcern : {
+    w: <nº de miembros de reconocimiento o majority>,
+    j: <boolean>, // si para considerar la escritura debe estar ya registrada en el journal
+    wtimeout: <numero> // en milisegundos
+}
+
+w
+- número de miembros en los que al menos debe escribirse la operación
+- majority en el menor de los valores:
+        - La mayoría de todos los miembros con voto i/arbitros
+        - La mayoría de todos los miembros con datos y voto.
+
+Read Concern
+
+Garantiza que los datos que leemos en los miembros del cluster están escritos en uno o varios miembros.
+
+.readConcern(<nivel>)
+
+"local". Valor por defecto para primario y devuelve el dato más reciente. => No usar readConcern.
+
+"available". Idem anterior sobre operaciones a secundario.
+
+"majority". Las consultas devuelven los datos con garantía de que estos están escritos en la mayoría simple
+            de los miembros del cluster.
+
+"linearizable". Idem anterior sobre el primario para garantizar que no tendremos rollback.

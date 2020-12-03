@@ -1,0 +1,132 @@
+Despliegue en local de un cluster para test de funcionalidades Replica Set
+
+Cluster de 3 servidores
+
+- Crear 3 directorios en nuestro equipo
+
+server1, server2, server3
+
+- Comando para levantar servidores de un cluster
+
+mongod --replSet clusterGetafe --dbpath data/server1 --port 27101
+mongod --replSet clusterGetafe --dbpath data/server2 --port 27102
+mongod --replSet clusterGetafe --dbpath data/server3 --port 27103
+
+- Configuración e inicialización del Replica Set
+
+Conectamos a uno de los miembros
+
+mongo --port 27101  
+
+rs.initiate({
+    _id: "clusterGetafe",
+    members: [
+        {_id: 0, host: "localhost:27101"},
+        {_id: 1, host: "localhost:27102"},
+        {_id: 2, host: "localhost:27103"},
+    ]
+})
+
+Tras 15 a 20 sec, comprobamos con:
+
+rs.status()
+
+Comprobar la replica de datos
+
+use alcorconTest
+
+for (i = 0; i < 1000; i++) {
+    db.foo.insert({a: i})
+}
+
+Por defecto los secundarios no aceptan operaciones de lectura, pero, a nivel de base de datos
+podemos permitirlas pasándole.
+
+db.setSecondaryOk()
+
+Si realizaramos sobre algún secundario una operación de escritura siempre devolverá error.
+
+Automatic failover
+
+Configuración de la prioridad de los miembros
+
+rs.config() Nos devuelve un objeto con la Configuración
+
+objeto podemos modificar la Configuración
+
+let conf = rs.conf()
+
+conf.members[2].priority = 2
+
+rs.reconfig(conf)
+
+
+Añadir nuevo miembro al cluster
+
+A nivel de este test creamos el directorio server4
+
+Levantamos con mongod --replSet clusterGetafe --dbpath data/server4 --port 27104
+
+Añadimos desde la shell conectada al primario con:
+
+rs.add({
+    host: "localhost:27104",
+    priority: 0,
+    votes: 0
+})
+
+conf = rs.conf()
+
+conf.members[3].priority = 1
+conf.members[3].votes = 1
+
+rs.reconfig(conf)
+
+Comprobamos tolerancia a fallos
+
+- Cuando dos servidores estén caídos, incluso aunque los dos vivos tengan el primario, este pasará a
+  ser secundario porque la tolerancia esta diseñada para que se puedan designar dos primarios
+ al mismo tiempo en particiones de red que dejen a los miembros aislados por pares.
+
+- Para solucionar podemos diseñar el cluster con miembros impares y si necesitamos ahorrar en recurso
+  el que desempata puede ser un árbitro.
+
+Añadir un miembro árbitro
+
+A nivel de test creamos directorio server5
+
+y levantamos servidor con mongod --replSet clusterGetafe --dbpath data/server5 --port 27105
+
+rs.addArb("localhost:27105")
+
+Miembros ocultos (No disponibles en los clientes ni para escritura ni para lectura)
+
+Asignar su propiedad hidden true y (obligatorimente) cambiar su prioridad a 0.
+
+config = rs.config()
+
+config.members[3].priority = 0
+config.members[3].hidden = true
+
+rs.reconfig(config)
+
+Miembro delayed
+
+Un tipo de miembro oculto, por tanto tiene que estar con prioridad 0 para que no pueda ser el
+primario y recibir escritura y con hidden true para que no pueda recibir lecturas.
+
+Añade un retraso en la sincronización en segundos para prevención de desastres.
+
+config = rs.config()
+
+config.members[3].slaveDelay = 120 // Segundos
+
+rs.reconfig(config)
+
+Retirar un miembro (por el motivo que fuera).
+
+- Apagar el miembro.
+
+- rs.remove("localhost:27104")
+
+- También el árbitro rs.remove("localhost:27105")

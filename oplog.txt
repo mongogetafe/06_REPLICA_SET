@@ -1,0 +1,36 @@
+Oplog o registro de operaciones
+
+Es una colección de cada servidor que se encuentra en la base de datos local y no se puede modificar. Es utilizada
+para la replicación de datos en MongoDB.
+
+ - Todas las operaciones registradas en el oplog son las operaciones de la base de datos
+   convertidas en operaciones idempotentes.
+
+Tamaño del oplog
+
+El oplog es una colección de tipo capped (https://docs.mongodb.com/manual/core/capped-collections/) cuyo
+tamaño es establecido por defecto para el cluster por Mongo:
+
+WiredTiger 5% espacio disponible en disco con min 50 MB y max 50GB
+
+Tu tamaño de oplog te mantenga las operaciones entre 1 y 2 días de antiguedad
+
+3 escenarios en los que puede ser necesario aumentar el tamaño del oplog:
+
+- Actualizaciones a múltiples documentos al mismo tiempo.
+
+- En un espacio de tiempo se produzca el mísmo número de eliminaciones que de inserciones de documentos.
+
+- Múltiples actualizaciones que no modifican los tamaños de las colecciones pero si que generan muchas operaciones.
+
+Comprobar el tamaño
+
+db.getReplicationInfo()
+
+Para modificarlo:
+
+db.adminCommand({
+    replSetResizeOplog: 1,
+    size: <tamaño del oplog en megas>,
+    minRetentionHours: <mínimo de horas a mantener una operacion>
+})

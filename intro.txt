@@ -1,0 +1,24 @@
+Introducción a Replica Set
+
+- Un Replica Set o cluster es un grupo de servidores que mantienen el mismo set de datos:
+
+    - ALTA DISPONIBILIDAD
+
+    - Incremento en la capacidad de lectura.
+
+    - Copias adicionales de los datos para propósitos dedicados:
+        - Reporting.
+        - Recuperación de desastres.
+        - Backup.
+        - ...
+
+¿ Es el Replica Set un sistema de escalado horizontal ?
+
+En principio no, porque las operaciones de escritura solo se producen en el primario, con lo
+cual la forma de escalar horizontalmente en Mongo es con sharding.
+
+Pero, en operaciones de lectura si que podemos aprovechar la distribución del cluster para
+descargar al primario de lecturas y así incrementar su capacidad y rendimiento.
+
+En Streaming replication Starting in MongoDB 4.4, sync from sources send a continuous stream of oplog entries to their syncing secondaries Prior to MongoDB 4.4, secondaries fetched batches of oplog entries by issuing a request to their sync from source and waiting for a response
+

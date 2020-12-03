@@ -1,0 +1,59 @@
+Formas de sincronización
+
+1.- Sincronización inicial
+
+Se incorpora un miembro al cluster.
+
+- El miembro esté vacío:
+        a) Clonar desde el primario todas las bases de datos excepto local.
+        b) Clonar la base de datos local en la que ya está el oplog.
+        c) Sincronización con las últimas operaciones del oplog.
+    - Proceso lento.
+    - El uso excesivo de la memoria del Primario. Se puede perder el set de datos frecuentes.
+
+- El miembro se incorpore con un backup del primario (no se puede utilizar la utilidad mongo dump).
+        a) Se realizará clonación de lo que falte desde el backup.
+        b) Sincronización con las últimas operaciones del oplog.
+
+2.- Replicación
+
+Los secundarios copian las operaciones del oplog del primario o del oplog de secundarios (con voto 1 y que no estén
+ocultos).
+
+    - Manejo de la obsolescencia. Un miembro que se haya caido puede no volver a recuperar su estado previo
+     si se queda demasiado atrás en la sincronización.
+        - Haya estado más tiempo caido que el diferencial de tiempo de las operaciones registradas
+          por el oplog del primario. => obsoleto.
+
+        - Por el volumen de operaciones que tenga el cluster el secundario no sea capaz de ponerse al día
+          (tenemos un volumen altísimo de operaciones de escritura) => inalcanzable.
+
+Estados de los miembros del cluster
+
+STARTUP Cuando un miembro se añade al cluster por primera vez, carga la configuración del replica set.
+
+STARTUP2 Cuando ya han pasado las posibles elecciones al añadir este miembro.
+
+RECOVERING. Ya esta funcionando correctamente pero no está disponible para lecturas.
+    - Sincronización inicial.
+    - Sincronización replicación.
+    - Obsoleto.
+    - Inalcanzable.
+
+ARBITER.
+
+DOWN.
+
+UNKNOWN. Tiene problemas a la hora de establecer la comunicación con los otros miembros.
+
+REMOVED.
+
+PRIMARY.
+
+SECONDARY.
+
+ROLLBACK. Estado cuando se acaba la fase recovering y comprueba que un anterior primario tiene operaciones
+          que no se propagaron a los demas miembros y por tanto las deshace en este estado Rollback. Una vez
+          que hace el rollback, pasará a SECONDARY.
+
+    
